@@ -1,0 +1,122 @@
+body {
+	font-family: sans-serif;
+}
+
+h1 {
+	text-align: center;
+}
+
+.error {
+	color: red;
+}
+
+.flash {
+	background-color: pink;
+	list-style-type: none;
+}
+
+/* restaurants page */
+
+main {
+	max-width: 800px;
+	margin: 0 auto;
+}
+
+.restaurants {
+	border: 2px solid black;
+	border-radius: 50px;
+}
+
+.restaurant-item {
+	border: 2px solid black;
+	border-radius: 50px;
+	padding: 10px;
+	position: relative;
+}
+
+.restaurant-item:hover {
+	background-color: #f3f2f1;
+	cursor: pointer;
+}
+
+.restaurant-name {
+	text-align: center;
+	font-family: Didot;
+}
+
+.restaurant-links {
+	position: absolute;
+	right: 40px;
+	bottom: 0;
+}
+
+/* menu page */
+
+.menu-container {
+	max-width: 500px;
+	margin: 0 auto;
+	padding: 50px;
+	border: 2px solid black;
+	border-radius: 50px;
+	box-shadow: 10px 10px 10px black;
+	font-family: Didot;
+}
+
+.menu-name {
+	margin-bottom: 10px;
+}
+
+.course {
+	text-align: center;
+	margin: 50px 0;
+}
+
+.course-hr {
+	width: 50%;
+	margin-bottom: 50px;
+}
+
+.name-price {
+	overflow: auto;
+}
+
+.item-name {
+	float: left;
+	font-style: italic;
+	font-weight: 700;
+}
+
+.item-price {
+	float: right;
+}
+
+.center-link {
+	display: block;
+	text-align: center;
+}
+
+/* forms */
+
+.form-container {
+	max-width: 800px;
+	margin: 0 auto;
+	padding: 20px;
+	font-size: 20px;
+}
+
+.text-input {
+	font-size: 20px;
+	padding: 2px;
+	width: 250px;
+}
+
+.submit-input {
+	font-size: 24px;
+}
+
+textarea {
+	font-size: 20px;
+	max-width: 400px;
+	width: 100%;s
+	height: 100px;
+}

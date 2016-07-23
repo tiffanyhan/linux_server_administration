@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<link rel="stylesheet" href="/static/styles.css">
+		<title>Restaurants Menu App</title>
+		<script>
+			restaurants = document.getElementsByClassName('restaurant-item')
+			console.log(restaurants)
+			for (var i = 0; i < restaurants.length; i++) {
+				console.log('looping over item ' + i)
+				restaurants[i].addEventListener('mouseover', function(event) {
+					event.target.style.color = 'grey';
+				});
+			}
+		</script>
+	</head>
+	<body>
+		{% block body %}
+		{% endblock %}
+	</body>
+</html>
