@@ -35,7 +35,8 @@ main {
 }
 
 .restaurant-item:hover {
-	background-color: #f3f2f1;
+	background-color: darkgrey;
+	color: white;
 	cursor: pointer;
 }
 
