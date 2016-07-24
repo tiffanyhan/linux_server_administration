@@ -3,7 +3,7 @@ app = Flask(__name__)
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from database_setup import Base, Restaurant, MenuItem
+from database_setup import Base, Restaurant, MenuItem, User
 
 # imports for Oauth2.0
 from flask import session as login_session
@@ -20,7 +20,7 @@ CLIENT_ID = json.loads(
 	open('client_secrets.json', 'r').read())['web']['client_id']
 
 def getSession():
-	engine = create_engine('sqlite:///restaurantmenu.db')
+	engine = create_engine('sqlite:///restaurantmenuwithusers.db')
 	Base.metadata.bind = engine
 	DBSession = sessionmaker(bind=engine)
 	session = DBSession()
@@ -34,7 +34,39 @@ def checkAuth():
 		auth = False
 	return auth
 
+def checkCreator(restaurant):
+	creator = ''
+	if login_session['user_id'] == restaurant.user_id:
+		creator = True
+	else:
+		creator = False
+	return creator
 
+# User helper functions
+def getUserID(email):
+	session = getSession()
+	try:
+		user = session.query(User).filter_by(email = email).one()
+		return user.user_id
+	except:
+		return None
+
+def getUserInfo(user_id):
+	session = getSession()
+	user = session.query(User).filter_by(user_id = user_id).one()
+	return user
+
+def createUser(login_session):
+	newUser = User(name = login_session['username'],
+					email = login_session['email'],
+					picture = login_session['picture'])
+	session = getSession()
+	session.add(newUser)
+	session.commit()
+	user = session.query(User).filter_by(email = login_session['email']).one()
+	return user.user_id
+
+# All of our routes and handlers
 @app.route('/login/')
 def showLogin():
 	state = ''.join(random.choice(string.ascii_uppercase + string.digits) for x in xrange(32))
@@ -111,6 +143,12 @@ def gconnect():
 	login_session['picture'] = data['picture']
 	login_session['email'] = data['email']
 
+	# see if user exists, if not then make a new one
+	user_id = getUserID(login_session['email'])
+	if not user_id:
+		user_id = createUser(login_session)
+	login_session['user_id'] = user_id
+
 	output = ''
 	output += '<h1>Welcome, '
 	output += login_session['username']
@@ -130,13 +168,15 @@ def gdisconnect():
 		response = make_response(json.dumps('Current user not connected.'), 401)
 		response.headers['Content-Type'] = 'application/json'
 		return response
-	# Execute HTTP GET request to revoke current token.
+
+	# Execute HTTP GET request to revoke current token
 	access_token = credentials.access_token
 	url = 'https://accounts.google.com/o/oauth2/revoke?token=%s' % access_token
 	h = httplib2.Http()
 	result = h.request(url, 'GET')[0]
+	response = requests.get(url).json()
 
-	if result['status'] == '200':
+	if response['error_description'] == 'Token expired or revoked' or result['status'] == '200':
 		# Reset the user's session.
 		del login_session['credentials']
 		del login_session['gplus_id']
@@ -171,6 +211,7 @@ def showRestaurants():
 def newRestaurant():
 	if request.method == 'POST':
 		newName = request.form['name']
+		user_id = login_session['user_id']
 
 		if not newName:
 			error = 'Please enter in a new restaurant name'
@@ -178,7 +219,8 @@ def newRestaurant():
 
 		else:
 			session = getSession()
-			newRestaurant = Restaurant(name = newName)
+			newRestaurant = Restaurant(name = newName,
+										user_id = login_session['user_id'])
 			session.add(newRestaurant)
 			session.commit()
 			flash("New restaurant created!")
@@ -197,7 +239,7 @@ def editRestaurant(restaurant_id):
 	session = getSession()
 	restaurantToEdit = session.query(Restaurant).filter_by(restaurant_id = restaurant_id).one()
 
-	if request.method == 'POST':
+	if request.method == 'POST' and checkCreator(restaurantToEdit):
 		editedName = request.form['name']
 
 		if not editedName:
@@ -211,17 +253,20 @@ def editRestaurant(restaurant_id):
 			restaurantToEdit.name = editedName
 			session.add(restaurantToEdit)
 			session.commit()
-			flash("Restaurant name edited")
+			flash("Restaurant renamed")
 
 			session.close()
-			return redirect(url_for('showRestaurants'))
+			return redirect(url_for('showMenu', restaurant_id = restaurant_id))
 
 
 	else:
-		if checkAuth() == False:
+		session.close()
+		if not checkAuth():
 			return redirect(url_for('showLogin'))
+		elif not checkCreator(restaurantToEdit):
+			flash("You must be the creator of this restaurant menu in order to make changes.")
+			return redirect(url_for('showMenu', restaurant_id = restaurant_id))
 		else:
-			session.close()
 			return render_template('editRestaurant.html',
 									restaurant_id = restaurant_id,
 									restaurant = restaurantToEdit)
@@ -240,8 +285,11 @@ def deleteRestaurant(restaurant_id):
 		return redirect(url_for('showRestaurants'))
 
 	else:
-		if checkAuth() == False:
+		if not checkAuth():
 			return redirect(url_for('showLogin'))
+		elif not checkCreator(restaurantToDelete):
+			flash("You must be the creator of this restaurant menu in order to make changes.")
+			return redirect(url_for('showMenu', restaurant_id = restaurant_id))
 		else:
 			session.close()
 			return render_template('deleteRestaurant.html',
@@ -260,19 +308,31 @@ def showMenu(restaurant_id):
 	desserts = []
 	beverages = []
 
-	if items == []:
-		flash('You currently have no items in this menu')
+	for item in items:
+		if item.course == 'Appetizer':
+			appetizers.append(item)
+		elif item.course == 'Entree':
+			entrees.append(item)
+		elif item.course == 'Dessert':
+			desserts.append(item)
+		elif item.course == 'Beverage':
+			beverages.append(item)
+
+	if not checkAuth() or not checkCreator(restaurant):
+		creator = getUserInfo(restaurant.user_id)
+		session.close()
+		return render_template('publicmenu.html',
+								restaurant_id = restaurant_id,
+								restaurant = restaurant,
+								appetizers = appetizers,
+								entrees = entrees,
+								desserts = desserts,
+								beverages = beverages,
+								creator = creator)
 
 	else:
-		for item in items:
-			if item.course == 'Appetizer':
-				appetizers.append(item)
-			elif item.course == 'Entree':
-				entrees.append(item)
-			elif item.course == 'Dessert':
-				desserts.append(item)
-			elif item.course == 'Beverage':
-				beverages.append(item)
+		if items == []:
+			flash('You currently have no items in this menu')
 
 		if appetizers == []:
 			flash('You currently have no appetizers in this menu')
@@ -283,20 +343,21 @@ def showMenu(restaurant_id):
 		if beverages == []:
 			flash('You currently have no beverages in this menu')
 
-	session.close()
-	return render_template('menu.html',
-							restaurant_id = restaurant_id,
-							restaurant = restaurant,
-							appetizers = appetizers,
-							entrees = entrees,
-							desserts = desserts,
-							beverages = beverages)
+		session.close()
+		return render_template('menu.html',
+								restaurant_id = restaurant_id,
+								restaurant = restaurant,
+								appetizers = appetizers,
+								entrees = entrees,
+								desserts = desserts,
+								beverages = beverages)
 
 @app.route('/restaurant/<int:restaurant_id>/menu/new/', methods = ['GET', 'POST'])
 def newMenuItem(restaurant_id):
 	session = getSession()
+	restaurant = session.query(Restaurant).filter_by(restaurant_id = restaurant_id).one()
 
-	if request.method == 'POST':
+	if request.method == 'POST' and checkCreator(restaurant):
 		name = request.form['name'].encode('latin-1')
 		price = request.form['price'].encode('latin-1')
 		description = request.form['description'].encode('latin-1')
@@ -317,12 +378,15 @@ def newMenuItem(restaurant_id):
 			return redirect(url_for('showMenu', restaurant_id = restaurant_id))
 
 	else:
-		if checkAuth() == False:
-				return redirect(url_for('showLogin'))
-		else:
-			restaurant = session.query(Restaurant).filter_by(restaurant_id = restaurant_id).one()
+		session.close()
+		if not checkAuth():
+			return redirect(url_for('showLogin'))
 
-			session.close()
+		elif not checkCreator(restaurant):
+			flash("You must be the creator of this restaurant menu in order to make changes.")
+			return redirect(url_for('showMenu', restaurant_id = restaurant_id))
+
+		else:
 			return render_template('newMenuItem.html',
 									restaurant_id = restaurant_id,
 									restaurant = restaurant)
@@ -330,9 +394,10 @@ def newMenuItem(restaurant_id):
 @app.route('/restaurant/<int:restaurant_id>/menu/<int:menu_id>/edit/', methods = ['GET', 'POST'])
 def editMenuItem(restaurant_id, menu_id):
 	session = getSession()
+	restaurant = session.query(Restaurant).filter_by(restaurant_id = restaurant_id).one()
 	itemToBeEdited = session.query(MenuItem).filter_by(menu_id = menu_id).one()
 
-	if request.method == 'POST':
+	if request.method == 'POST' and checkCreator(restaurant):
 		if request.form['name']:
 			itemToBeEdited.name = request.form['name']
 		if request.form['course']:
@@ -350,12 +415,13 @@ def editMenuItem(restaurant_id, menu_id):
 		return redirect(url_for('showMenu', restaurant_id = restaurant_id))
 
 	else:
-		if checkAuth() == False:
-				return redirect(url_for('showLogin'))
+		session.close()
+		if not checkAuth():
+			return redirect(url_for('showLogin'))
+		elif not checkCreator(restaurant):
+			flash("You must be the creator of this restaurant menu in order to make changes.")
+			return redirect(url_for('showMenu', restaurant_id = restaurant_id))
 		else:
-			restaurant = session.query(Restaurant).filter_by(restaurant_id = restaurant_id).one()
-
-			session.close()
 			return render_template('editMenuItem.html',
 									restaurant_id = restaurant_id,
 									menu_id = menu_id,
@@ -365,9 +431,10 @@ def editMenuItem(restaurant_id, menu_id):
 @app.route('/restaurant/<int:restaurant_id>/menu/<int:menu_id>/delete/', methods = ['GET', 'POST'])
 def deleteMenuItem(restaurant_id, menu_id):
 	session = getSession()
+	restaurant = session.query(Restaurant).filter_by(restaurant_id = restaurant_id).one()
 	itemToBeDeleted = session.query(MenuItem).filter_by(menu_id = menu_id).one()
 
-	if request.method == 'POST':
+	if request.method == 'POST' and checkCreator(restaurant):
 		session.delete(itemToBeDeleted)
 		session.commit()
 		flash("Menu item deleted")
@@ -376,12 +443,13 @@ def deleteMenuItem(restaurant_id, menu_id):
 		return redirect(url_for('showMenu', restaurant_id = restaurant_id))
 
 	else:
-		if checkAuth() == False:
-				return redirect(url_for('showLogin'))
+		session.close()
+		if not checkAuth():
+			return redirect(url_for('showLogin'))
+		elif not checkCreator(restaurant):
+			flash("You must be the creator of this restaurant menu in order to make changes.")
+			return redirect(url_for('showMenu', restaurant_id = restaurant_id))
 		else:
-			restaurant = session.query(Restaurant).filter_by(restaurant_id = restaurant_id).one()
-
-			session.close()
 			return render_template('deleteMenuItem.html',
 									restaurant_id = restaurant_id,
 									menu_id = menu_id,

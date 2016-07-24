@@ -2,7 +2,7 @@
 {% block body %}
 	<div class="form-container">
 		<h2>Add a new menu item to <span style="text-decoration: underline">{{ restaurant.name }}</span>'s Menu</h2>
-
+		<div class="error">{{ error }}</div>
 		<form method="POST" action="{{ url_for('newMenuItem', restaurant_id = restaurant_id) }}" enctype="multipart/form-data">
 			<label>Name:</label>
 			<br>

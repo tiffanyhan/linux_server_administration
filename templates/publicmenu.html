@@ -3,18 +3,14 @@
 	<a href="{{ url_for('showRestaurants') }}">Back to All Restaurants</a>
 	<br>
 	<br>
-	<div>
-		<span class="center">
-			<a href="{{ url_for('editRestaurant', restaurant_id = restaurant.restaurant_id) }}">Rename</a> |
-			<a href="{{ url_for('deleteRestaurant', restaurant_id = restaurant.restaurant_id ) }}">Delete</a>
-		</span>
-	</div>
 
 	<div class="menu-container">
 		<h1 class="menu-name"><span style="text-decoration: underline">{{ restaurant.name }}</span>'s Menu</h1>
+
+		<p class="center">Created by: {{ creator.name }}</p>
+		<img class="center" src="{{ creator.picture }}">
 		<br>
-		<br>
-		<a href="{{ url_for('newMenuItem', restaurant_id = restaurant_id) }}">Add a New Menu Item</a>
+
 		{% with messages = get_flashed_messages() %}
 			{% if messages %}
 				<hr>
@@ -41,12 +37,6 @@
 					{{ item.description }}
 				</p>
 
-				<div class="item-links-container">
-					<span class="item-links">
-						<a href="{{ url_for('editMenuItem', restaurant_id = restaurant_id, menu_id = item.menu_id) }}">Edit</a> |
-						<a href="{{ url_for('deleteMenuItem', restaurant_id = restaurant_id, menu_id = item.menu_id) }}">Delete</a>
-					</span>
-				</div>
 			</div>
 			<br>
 			<br>
@@ -70,12 +60,6 @@
 					{{ item.description }}
 				</p>
 
-				<div class="item-links-container">
-					<span class="item-links">
-						<a href="{{ url_for('editMenuItem', restaurant_id = restaurant_id, menu_id = item.menu_id) }}">Edit</a> |
-						<a href="{{ url_for('deleteMenuItem', restaurant_id = restaurant_id, menu_id = item.menu_id) }}">Delete</a>
-					</span>
-				</div>
 			</div>
 			<br>
 			<br>
@@ -99,12 +83,6 @@
 					{{ item.description }}
 				</p>
 
-				<div class="item-links-container">
-					<span class="item-links">
-						<a href="{{ url_for('editMenuItem', restaurant_id = restaurant_id, menu_id = item.menu_id) }}">Edit</a> |
-						<a href="{{ url_for('deleteMenuItem', restaurant_id = restaurant_id, menu_id = item.menu_id) }}">Delete</a>
-					</span>
-				</div>
 			</div>
 			<br>
 			<br>
@@ -128,12 +106,6 @@
 					{{ item.description }}
 				</p>
 
-				<div class="item-links-container">
-					<span class="item-links">
-						<a href="{{ url_for('editMenuItem', restaurant_id = restaurant_id, menu_id = item.menu_id) }}">Edit</a> |
-						<a href="{{ url_for('deleteMenuItem', restaurant_id = restaurant_id, menu_id = item.menu_id) }}">Delete</a>
-					</span>
-				</div>
 			</div>
 			<br>
 			<br>

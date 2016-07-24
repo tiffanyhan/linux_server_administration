@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block body %}
 	<div class="form-container">
-		<h2>Edit <span style="text-decoration: underline">{{ restaurant.name }}</span>'s Name</h2>
+		<h2>Rename <span style="text-decoration: underline">{{ restaurant.name }}</span></h2>
 		<form method="POST" action="{{ url_for('editRestaurant', restaurant_id = restaurant_id) }}" enctype="multipart/form-data">
 			<label>Name:</label>
 			<br>
@@ -9,7 +9,7 @@
 			<input class="text-input" type="text" size="30" name="name" placeholder="{{ restaurant.name }}">
 			<br>
 			<br>
-			<input class="submit-input" type="submit" value="Edit"> | <a href="{{ url_for('showRestaurants') }}">Cancel</a>
+			<input class="submit-input" type="submit" value="Rename"> | <a href="{{ url_for('showMenu', restaurant_id = restaurant_id) }}">Cancel</a>
 		</form>
 	</div>
 {% endblock %}
