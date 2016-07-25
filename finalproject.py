@@ -66,6 +66,15 @@ def createUser(login_session):
 	user = session.query(User).filter_by(email = login_session['email']).one()
 	return user.user_id
 
+def updatePicture(login_session):
+	session = getSession()
+	user = session.query(User).filter_by(email = login_session['email']).one()
+	user.picture = login_session['picture']
+	session.add(user)
+	session.commit()
+	return user.user_id
+
+
 # All of our routes and handlers
 @app.route('/login/')
 def showLogin():
@@ -148,6 +157,7 @@ def gconnect():
 	user_id = getUserID(login_session['email'])
 	if not user_id:
 		user_id = createUser(login_session)
+	#updatePicture(login_session)
 	login_session['user_id'] = user_id
 
 	flash("you are now logged in as %s" % login_session['username'])
@@ -218,6 +228,7 @@ def fbconnect():
 	user_id = getUserID(login_session['email'])
 	if not user_id:
 		user_id = createUser(login_session)
+	# updatePicture(login_session)
 	login_session['user_id'] = user_id
 
 	flash("you are now logged in as %s" % login_session['username'])
