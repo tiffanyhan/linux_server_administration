@@ -169,7 +169,6 @@ def gdisconnect():
 	h = httplib2.Http()
 	result = h.request(url, 'GET')[0]
 	response = requests.get(url).json()
-	print(url)
 
 	if result['status'] != '200':
 		response = make_response(
@@ -200,8 +199,6 @@ def fbconnect():
 	url = 'https://graph.facebook.com/v2.4/me?%s&fields=name,id,email' % token
 	h = httplib2.Http()
 	result = h.request(url, 'GET')[1]
-	print "url sent for API access: %s" % url
-	print "API JSON result: %s" % result
 
 	data = json.loads(result)
 	login_session['provider'] = 'facebook'
@@ -232,7 +229,6 @@ def fbdisconnect():
 	facebook_id = login_session['facebook_id']
 	access_token = login_session.get('access_token')
 	url = 'https://graph.facebook.com/%s/premissions?access_token=%s' % (facebook_id, access_token)
-	print url
 	h = httplib2.Http()
 	result = h.request(url, "DELETE")[1]
 	return "you have been logged out"
@@ -274,8 +270,6 @@ def showRestaurants():
 
 @app.route('/restaurant/new/', methods = ['GET', 'POST'])
 def newRestaurant():
-	user_id = login_session['user_id']
-
 	if request.method == 'POST':
 		newName = request.form['name']
 

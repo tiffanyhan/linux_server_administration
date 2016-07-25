@@ -30,27 +30,36 @@
 		<br>
 		<br>
 		<div class="form-container">
-			<h2 class="center">Sign in with Google+</h2>
-			<div class="center" id="signinButton">
-				<span class="g-signin"
-						data-scope="openid email"
-						data-clientid="738102744369-3ldsk7n25a9ubt1ngmfmekrq6bs5pqo5.apps.googleusercontent.com"
-						data-redirecturi="postmessage"
-						data-accesstype="offline"
-						data-cookiepolicy="single_host_origin"
-						data-callback="signInCallback"
-						data-approvalprompt="force">
-				</span>
-			</div>
-		</div>
+			<h2 class="center">Sign in with one of our providers:</h2>
 
-		<div id="result"></div>
+			<div class="signin-buttons">
+				<span class="g-button signin-button">
+					<div class="center" id="signinButton">
+						<span class="g-signin"
+								data-scope="openid email"
+								data-clientid="738102744369-3ldsk7n25a9ubt1ngmfmekrq6bs5pqo5.apps.googleusercontent.com"
+								data-redirecturi="postmessage"
+								data-accesstype="offline"
+								data-cookiepolicy="single_host_origin"
+								data-callback="signInCallback"
+								data-approvalprompt="force">
+						</span>
+					</div>
+				</span>
+
+				<span class="fb-button center signin-button">
+					<button>
+						<fb:login-button scope="public_profile,email" onlogin="sendTokenToServer();">
+						<a href='javascript:sendTokenToServer()'>Login with Facebook</a>
+						</fb:login-button>
+			        </button>
+			    </span>
+			</div>
+        </div>
 
 		<script>
 			function signInCallback(authResult) {
 				if (authResult['code']) {
-					$('#signinButton').attr('style', 'display: none');
-
 					$.ajax({
 						type: 'POST',
 						url: '/gconnect?state={{ state }}',
@@ -72,7 +81,7 @@
 		</script>
 
 		<script>
-window.fbAsyncInit = function() {
+			window.fbAsyncInit = function() {
 			    FB.init({
 			        appId: '884816694963455',
 			        cookie: true, // enable cookies to allow the server to access
@@ -108,10 +117,7 @@ window.fbAsyncInit = function() {
 			            success: function(result) {
 			                // Handle or verify the server response if necessary.
 			                if (result) {
-			                    $('#result').html('Login Successful!</br>' + result + '</br>Redirecting...')
-			                    setTimeout(function() {
-			                        window.location.href = "/restaurants";
-			                    }, 4000);
+			      			    window.location.href = "/restaurants";
 			                } else {
 			                    $('#result').html('Failed to make a server-side call. Check your configuration and console.');
 			                }
@@ -120,12 +126,5 @@ window.fbAsyncInit = function() {
 			    });
 			}
 		</script>
-
-		<button>
-			<fb:login-button scope="public_profile,email" onlogin="sendTokenToServer();">
-			<a href='javascript:sendTokenToServer()'>Login with Facebook</a>
-			</fb:login-button>
-        </button>
-
 	</body>
 </html>
