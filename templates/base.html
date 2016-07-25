@@ -7,8 +7,8 @@
 	</head>
 	<body>
 		<div class="overflow">
-			{% if user %}
-			<img class="avatar" src="{{ user.picture }}">
+			{% if 'username' in session %}
+			<img class="avatar" src="{{ session.picture }}">
 			<a class="signout-button" href="{{ url_for('disconnect') }}">Sign out</a>
 
 			{% else %}
@@ -28,7 +28,10 @@
 			$(document).click(function() {
 				if ( (!$(event.target).closest('.avatar').length)
 				&& (!$(event.target).closest('.signout-button').length) ) {
-					$('.signout-button').removeClass('display')
+					if ($('.signout-button').hasClass('display')) {
+						$('.signout-button').removeClass('display')
+
+					}
 				}
 			});
 
