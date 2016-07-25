@@ -9,7 +9,7 @@
 		<div class="overflow">
 			{% if user %}
 			<img class="avatar" src="{{ user.picture }}">
-			<a class="signout-button" href="{{ url_for('gdisconnect') }}">Sign out</a>
+			<a class="signout-button" href="{{ url_for('disconnect') }}">Sign out</a>
 
 			{% else %}
 			<a class="signin-button" href="{{ url_for('showLogin') }}">Sign In</a>
