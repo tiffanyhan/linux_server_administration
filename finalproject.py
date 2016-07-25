@@ -170,7 +170,7 @@ def gdisconnect():
 	response = requests.get(url).json()
 	print(url)
 
-	if response['error'] or result['status'] == '200':
+	if result['status'] == '200':
 		# Reset the user's session.
 		del login_session['credentials']
 		del login_session['gplus_id']
@@ -186,7 +186,7 @@ def gdisconnect():
 	else:
 		# For whatever reason, the given token was invalid.
 		response = make_response(
-			json.dumps('Failed to revoke token for given user.'), 400)
+		json.dumps('Failed to revoke token for given user.'), 400)
 		response.headers['Content-Type'] = 'application/json'
 		return response
 
