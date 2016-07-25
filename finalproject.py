@@ -149,15 +149,8 @@ def gconnect():
 		user_id = createUser(login_session)
 	login_session['user_id'] = user_id
 
-	output = ''
-	output += '<h1>Welcome, '
-	output += login_session['username']
-	output += '!</h1>'
-	output += '<img src="'
-	output += login_session['picture']
-	output += '" style = "width:300px; height:300px; border-radius:150px; -webkit-border-radius:150px; -moz-border-radius:150px;">'
 	flash("you are now logged in as %s" % login_session['username'])
-	print "done!"
+	output = "done!"
 	return output
 
 @app.route('/gdisconnect/')
@@ -175,8 +168,9 @@ def gdisconnect():
 	h = httplib2.Http()
 	result = h.request(url, 'GET')[0]
 	response = requests.get(url).json()
+	print(url)
 
-	if response['error_description'] == 'Token expired or revoked' or result['status'] == '200':
+	if response['error'] or result['status'] == '200':
 		# Reset the user's session.
 		del login_session['credentials']
 		del login_session['gplus_id']
@@ -186,7 +180,8 @@ def gdisconnect():
 
 		response = make_response(json.dumps('Successfully disconnected.'), 200)
 		response.headers['Content-Type'] = 'application/json'
-		return response
+		flash("You have signed out.")
+		return redirect(url_for('showRestaurants'))
 
 	else:
 		# For whatever reason, the given token was invalid.
@@ -200,18 +195,25 @@ def gdisconnect():
 def showRestaurants():
 	session = getSession()
 	restaurants = session.query(Restaurant).all()
+	user = ''
+
+	if checkAuth():
+		user = getUserInfo(login_session['user_id'])
 
 	if restaurants == []:
 		flash('You currently have no restaurants to list')
 
 	session.close()
-	return render_template('restaurants.html', restaurants = restaurants)
+	return render_template('restaurants.html', restaurants = restaurants,
+												user = user)
 
 @app.route('/restaurant/new/', methods = ['GET', 'POST'])
 def newRestaurant():
+	user_id = login_session['user_id']
+	user = getUserInfo(user_id)
+
 	if request.method == 'POST':
 		newName = request.form['name']
-		user_id = login_session['user_id']
 
 		if not newName:
 			error = 'Please enter in a new restaurant name'
@@ -232,7 +234,7 @@ def newRestaurant():
 		if checkAuth() == False:
 			return redirect(url_for('showLogin'))
 		else:
-			return render_template('newRestaurant.html')
+			return render_template('newRestaurant.html', user = user)
 
 @app.route('/restaurant/<int:restaurant_id>/edit/', methods = ['GET', 'POST'])
 def editRestaurant(restaurant_id):
@@ -267,9 +269,11 @@ def editRestaurant(restaurant_id):
 			flash("You must be the creator of this restaurant menu in order to make changes.")
 			return redirect(url_for('showMenu', restaurant_id = restaurant_id))
 		else:
+			user = getUserInfo(login_session['user_id'])
 			return render_template('editRestaurant.html',
 									restaurant_id = restaurant_id,
-									restaurant = restaurantToEdit)
+									restaurant = restaurantToEdit,
+									user = user)
 
 @app.route('/restaurant/<int:restaurant_id>/delete/', methods = ['GET', 'POST'])
 def deleteRestaurant(restaurant_id):
@@ -285,16 +289,18 @@ def deleteRestaurant(restaurant_id):
 		return redirect(url_for('showRestaurants'))
 
 	else:
+		session.close()
 		if not checkAuth():
 			return redirect(url_for('showLogin'))
 		elif not checkCreator(restaurantToDelete):
 			flash("You must be the creator of this restaurant menu in order to make changes.")
 			return redirect(url_for('showMenu', restaurant_id = restaurant_id))
 		else:
-			session.close()
+			user = getUserInfo(login_session['user_id'])
 			return render_template('deleteRestaurant.html',
 									restaurant_id = restaurant_id,
-									restaurant = restaurantToDelete)
+									restaurant = restaurantToDelete,
+									user = user)
 
 @app.route('/restaurant/<int:restaurant_id>/')
 @app.route('/restaurant/<int:restaurant_id>/menu/')
@@ -302,6 +308,10 @@ def showMenu(restaurant_id):
 	session = getSession()
 	restaurant = session.query(Restaurant).filter_by(restaurant_id = restaurant_id).one()
 	items = session.query(MenuItem).filter_by(restaurant_id = restaurant_id).all()
+	user = ''
+
+	if checkAuth():
+		user = getUserInfo(login_session['user_id'])
 
 	appetizers = []
 	entrees = []
@@ -328,7 +338,8 @@ def showMenu(restaurant_id):
 								entrees = entrees,
 								desserts = desserts,
 								beverages = beverages,
-								creator = creator)
+								creator = creator,
+								user = user)
 
 	else:
 		if items == []:
@@ -350,7 +361,8 @@ def showMenu(restaurant_id):
 								appetizers = appetizers,
 								entrees = entrees,
 								desserts = desserts,
-								beverages = beverages)
+								beverages = beverages,
+								user = user)
 
 @app.route('/restaurant/<int:restaurant_id>/menu/new/', methods = ['GET', 'POST'])
 def newMenuItem(restaurant_id):
@@ -385,11 +397,12 @@ def newMenuItem(restaurant_id):
 		elif not checkCreator(restaurant):
 			flash("You must be the creator of this restaurant menu in order to make changes.")
 			return redirect(url_for('showMenu', restaurant_id = restaurant_id))
-
 		else:
+			user = getUserInfo(login_session['user_id'])
 			return render_template('newMenuItem.html',
 									restaurant_id = restaurant_id,
-									restaurant = restaurant)
+									restaurant = restaurant,
+									user = user)
 
 @app.route('/restaurant/<int:restaurant_id>/menu/<int:menu_id>/edit/', methods = ['GET', 'POST'])
 def editMenuItem(restaurant_id, menu_id):
@@ -422,11 +435,13 @@ def editMenuItem(restaurant_id, menu_id):
 			flash("You must be the creator of this restaurant menu in order to make changes.")
 			return redirect(url_for('showMenu', restaurant_id = restaurant_id))
 		else:
+			user = getUserInfo(login_session['user_id'])
 			return render_template('editMenuItem.html',
 									restaurant_id = restaurant_id,
 									menu_id = menu_id,
 									restaurant = restaurant,
-									item = itemToBeEdited)
+									item = itemToBeEdited,
+									user = user)
 
 @app.route('/restaurant/<int:restaurant_id>/menu/<int:menu_id>/delete/', methods = ['GET', 'POST'])
 def deleteMenuItem(restaurant_id, menu_id):
@@ -450,11 +465,13 @@ def deleteMenuItem(restaurant_id, menu_id):
 			flash("You must be the creator of this restaurant menu in order to make changes.")
 			return redirect(url_for('showMenu', restaurant_id = restaurant_id))
 		else:
+			user = getUserInfo(login_session['user_id'])
 			return render_template('deleteMenuItem.html',
 									restaurant_id = restaurant_id,
 									menu_id = menu_id,
 									restaurant = restaurant,
-									item = itemToBeDeleted)
+									item = itemToBeDeleted,
+									user = user)
 
 @app.route('/restaurants/JSON/')
 def restaurantJSON():

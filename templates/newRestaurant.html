@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block body %}
+	<a class="back-link" href="{{ url_for('showRestaurants') }}">Back to All Restaurants</a>
 	<div class="form-container">
 		<h2>Create a New Restaurant</h2>
 		<form method="POST" action="{{ url_for('newRestaurant') }}" enctype="multipart/form-data">

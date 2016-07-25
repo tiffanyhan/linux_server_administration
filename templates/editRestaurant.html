@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% block body %}
+	<a class="back-link" href="{{ url_for('showMenu', restaurant_id = restaurant_id) }}">Back to Menu</a>
 	<div class="form-container">
 		<h2>Rename <span style="text-decoration: underline">{{ restaurant.name }}</span></h2>
 		<form method="POST" action="{{ url_for('editRestaurant', restaurant_id = restaurant_id) }}" enctype="multipart/form-data">

@@ -1,5 +1,6 @@
 body {
 	font-family: sans-serif;
+	position: relative;
 }
 
 h1 {
@@ -13,6 +14,64 @@ h1 {
 .flash {
 	background-color: pink;
 	list-style-type: none;
+}
+
+.overflow {
+	overflow: auto;
+}
+
+.avatar {
+	width: 35px;
+	height: auto;
+	border-radius: 25px;
+	float: right;
+	margin-right: 10px;
+}
+
+.avatar:hover {
+	opacity: 0.6;
+}
+
+.signin-button,
+.signout-button {
+	height: auto;
+	text-align: center;
+	text-decoration: none;
+	font-weight: 700;
+	font-size: 14px;
+}
+
+.signin-button {
+	background-color: #4b69e8;
+	color: white;
+	padding: 10px;
+	float: right;
+	width: 50px;
+	border-radius: 5px;}
+
+.signout-button {
+	width: 75px;
+	background-color: beige;
+	padding: 10px 5px;
+	position: absolute;
+	top: 45px;
+	right: 25px;
+	border: 1px solid black;
+	display: none;
+}
+
+.display {
+	display: inline;
+}
+
+.back-link {
+	position: absolute;
+	top: 10px;
+}
+
+.center {
+	display: block;
+	text-align: center;
 }
 
 /* restaurants page */
@@ -34,7 +93,7 @@ main {
 }
 
 .restaurant-item:hover {
-	background-color: darkgrey;
+	background-color: lightgrey;
 	color: white;
 	cursor: pointer;
 }
@@ -45,11 +104,6 @@ main {
 }
 
 /* menu page */
-
-.center {
-	display: block;
-	text-align: center;
-}
 
 .menu-container {
 	max-width: 500px;
@@ -94,10 +148,10 @@ img {
 /* forms */
 
 .form-container {
-	max-width: 800px;
+	max-width: 700px;
 	margin: 0 auto;
-	padding: 20px;
 	font-size: 20px;
+	padding: 0 35px;
 }
 
 .text-input {
