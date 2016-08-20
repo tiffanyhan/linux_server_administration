@@ -568,6 +568,7 @@ def deleteMenuItem(restaurant_id, menu_id):
 									restaurant = restaurant,
 									item = itemToBeDeleted)
 
+# returns a JSON endpoint for all restaurants
 @app.route('/restaurants/JSON/')
 def restaurantJSON():
 	session = getSession()
@@ -576,6 +577,7 @@ def restaurantJSON():
 	session.close()
 	return jsonify(Restaurants=[restaurant.serialize for restaurant in restaurants])
 
+# returns a JSON endpoint for a restaurant's menu page
 @app.route('/restaurant/<int:restaurant_id>/menu/JSON/')
 def restaurantMenuJSON(restaurant_id):
 	session = getSession()
@@ -585,6 +587,7 @@ def restaurantMenuJSON(restaurant_id):
 	session.close()
 	return jsonify(MenuItems=[item.serialize for item in items])
 
+# returns a JSON endpoint for one individual menu item
 @app.route('/restaurant/<int:restaurant_id>/menu/<int:menu_id>/JSON/')
 def restaurantMenuItemJSON(restaurant_id, menu_id):
 	session = getSession()
