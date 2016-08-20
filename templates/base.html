@@ -26,7 +26,8 @@
 			});
 
 			$(document).click(function() {
-				if (!$(event.target).closest('.signout-button').length) {
+				if ( (!$(event.target).closest('.avatar').length)
+				&& (!$(event.target).closest('.signout-button').length) ) {
 					if ($('.signout-button').hasClass('display')) {
 						$('.signout-button').removeClass('display')
 
