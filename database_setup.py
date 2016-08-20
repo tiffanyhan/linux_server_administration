@@ -26,7 +26,8 @@ class Restaurant(Base):
 						   primary_key = True)
 	user_id = Column(Integer, ForeignKey('user.user_id'))
 	user = relationship(User)
-
+	# add a method to help return a JSON endpoint
+	# of the restaurant object's properties
 	@property
 	def serialize(self):
 		return {
@@ -49,7 +50,8 @@ class MenuItem(Base):
 	restaurant = relationship(Restaurant)
 	user_id = Column(Integer, ForeignKey('user.user_id'))
 	user = relationship(User)
-
+	# add a method to help return a JSON endpoint
+	# of the menu item object's properties
 	@property
 	def serialize(self):
 		return {
