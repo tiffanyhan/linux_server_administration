@@ -9,6 +9,8 @@ from database_setup import Base, Restaurant, MenuItem, User
 from oauth2client.client import flow_from_clientsecrets
 from oauth2client.client import FlowExchangeError
 
+from functools import wraps
+
 import random
 import string
 import httplib2
@@ -111,6 +113,32 @@ def updatePicture(login_session):
     session.add(user)
     session.commit()
     return user.user_id
+
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if checkAuth():
+            return f(*args, **kwargs)
+        else:
+            return redirect(url_for('showLogin'))
+    return decorated_function
+
+
+def owner_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        restaurant_id = kwargs.get('restaurant_id')
+        session = getSession()
+        restaurant = session.query(Restaurant).filter_by(restaurant_id=restaurant_id).one()
+        kwargs['restaurant'] = restaurant
+        kwargs['session'] = session
+        if checkCreator(restaurant):
+            return f(*args, **kwargs)
+        else:
+            flash(CREATOR_ERROR)
+            return redirect(url_for('showMenu', restaurant_id=restaurant_id))
+    return decorated_function
 
 
 @app.route('/login/')
@@ -338,6 +366,7 @@ def showRestaurants():
 
 
 @app.route('/restaurant/new/', methods=['GET', 'POST'])
+@login_required
 def newRestaurant():
     '''
     handles creation of a new restaurant
@@ -360,90 +389,62 @@ def newRestaurant():
 
             session.close()
             return redirect(url_for('showRestaurants'))
-    # only show form if the user is logged in, otherwise
-    # redirect them to the login page
     else:
-        if checkAuth() == False:
-            return redirect(url_for('showLogin'))
-        else:
-            return render_template('newRestaurant.html')
+        return render_template('newRestaurant.html')
 
 
 @app.route('/restaurant/<int:restaurant_id>/edit/', methods=['GET', 'POST'])
-def editRestaurant(restaurant_id):
+@login_required
+@owner_required
+def editRestaurant(restaurant_id, restaurant, session):
     '''
     handles editing of an existing restaurant
     '''
-    session = getSession()
-    restaurantToEdit = session.query(Restaurant).filter_by(restaurant_id=restaurant_id).one()  # noqa
-    # check again if user is creator of restaurant
-    if request.method == 'POST' and checkCreator(restaurantToEdit):
+    if request.method == 'POST':
         editedName = request.form['name']
         # update the restaurant in the db as long as the user
         # inputted a new name
         if not editedName:
             error = 'Please enter in a new restaurant name'
+            session.close()
             return render_template('editRestaurant.html',
                                    restaurant_id=restaurant_id,
-                                   restaurant=restaurantToEdit,
+                                   restaurant=restaurant,
                                    error=error)
-
         else:
-            restaurantToEdit.name = editedName
-            session.add(restaurantToEdit)
+            restaurant.name = editedName
+            session.add(restaurant)
             session.commit()
             flash("Restaurant renamed")
 
             session.close()
             return redirect(url_for('showMenu', restaurant_id=restaurant_id))
-
-    # only show form is user is logged in AND the user is the creator of the
-    # restaurant, otherwise redirect them to the login page or to the
-    # read-only view of the restaurant menu page
     else:
         session.close()
-        if not checkAuth():
-            return redirect(url_for('showLogin'))
-        elif not checkCreator(restaurantToEdit):
-            flash(CREATOR_ERROR)
-            return redirect(url_for('showMenu', restaurant_id=restaurant_id))
-        else:
-            return render_template('editRestaurant.html',
+        return render_template('editRestaurant.html',
                                    restaurant_id=restaurant_id,
-                                   restaurant=restaurantToEdit)
+                                   restaurant=restaurant)
 
 
 @app.route('/restaurant/<int:restaurant_id>/delete/', methods=['GET', 'POST'])
-def deleteRestaurant(restaurant_id):
+@login_required
+@owner_required
+def deleteRestaurant(restaurant_id, restaurant, session):
     '''
     handles deletion of an existing restaurant
     '''
-    session = getSession()
-    restaurantToDelete = session.query(Restaurant) \
-                                .filter_by(restaurant_id=restaurant_id) \
-                                .one()
-    # check again if user is creator of restaurant
-    if request.method == 'POST' and checkCreator(restaurantToDelete):
-        session.delete(restaurantToDelete)
+    if request.method == 'POST':
+        session.delete(restaurant)
         session.commit()
         flash("Restaurant deleted")
 
         session.close()
         return redirect(url_for('showRestaurants'))
-    # only show form is user is logged in AND the user is the creator of the
-    # restaurant, otherwise redirect them to the login page or to the
-    # read-only view of the restaurant menu page
     else:
         session.close()
-        if not checkAuth():
-            return redirect(url_for('showLogin'))
-        elif not checkCreator(restaurantToDelete):
-            flash(CREATOR_ERROR)
-            return redirect(url_for('showMenu', restaurant_id=restaurant_id))
-        else:
-            return render_template('deleteRestaurant.html',
+        return render_template('deleteRestaurant.html',
                                    restaurant_id=restaurant_id,
-                                   restaurant=restaurantToDelete)
+                                   restaurant=restaurant)
 
 
 @app.route('/restaurant/<int:restaurant_id>/')
@@ -516,16 +517,13 @@ def showMenu(restaurant_id):
 
 
 @app.route('/restaurant/<int:restaurant_id>/menu/new/', methods=['GET', 'POST'])  # noqa
-def newMenuItem(restaurant_id):
+@login_required
+@owner_required
+def newMenuItem(restaurant_id, restaurant, session):
     '''
     handles creation of a new menu item
     '''
-    session = getSession()
-    restaurant = session.query(Restaurant) \
-                        .filter_by(restaurant_id=restaurant_id) \
-                        .one()
-    # check again if user is creator of restaurant
-    if request.method == 'POST' and checkCreator(restaurant):
+    if request.method == 'POST':
         # get all the info inputted to the form
         # and create a new menu item using the info
         name = request.form.get('name')
@@ -560,34 +558,22 @@ def newMenuItem(restaurant_id):
 
             session.close()
             return redirect(url_for('showMenu', restaurant_id=restaurant_id))
-    # only show form is user is logged in AND the user is the creator of the
-    # restaurant, otherwise redirect them to the login page or to the
-    # read-only view of the restaurant menu page
     else:
         session.close()
-        if not checkAuth():
-            return redirect(url_for('showLogin'))
-        elif not checkCreator(restaurant):
-            flash(CREATOR_ERROR)
-            return redirect(url_for('showMenu', restaurant_id=restaurant_id))
-        else:
-            return render_template('newMenuItem.html',
+        return render_template('newMenuItem.html',
                                    restaurant_id=restaurant_id,
                                    restaurant=restaurant)
 
 
 @app.route('/restaurant/<int:restaurant_id>/menu/<int:menu_id>/edit/', methods=['GET', 'POST'])  # noqa
-def editMenuItem(restaurant_id, menu_id):
+@login_required
+@owner_required
+def editMenuItem(restaurant_id, menu_id, restaurant, session):
     '''
     handles editing of an existing menu item
     '''
-    session = getSession()
-    restaurant = session.query(Restaurant) \
-                        .filter_by(restaurant_id=restaurant_id) \
-                        .one()
     itemToBeEdited = session.query(MenuItem).filter_by(menu_id=menu_id).one()
-    # check again if user is creator of restaurant
-    if request.method == 'POST' and checkCreator(restaurant):
+    if request.method == 'POST':
         # get all the info inputted to the form
         # and edit the menu item using the info
         name = request.form.get('name')
@@ -612,19 +598,9 @@ def editMenuItem(restaurant_id, menu_id):
 
         session.close()
         return redirect(url_for('showMenu', restaurant_id=restaurant_id))
-
-    # only show form is user is logged in AND the user is the creator of the
-    # restaurant, otherwise redirect them to the login page or to the
-    # read-only view of the restaurant menu page
     else:
         session.close()
-        if not checkAuth():
-            return redirect(url_for('showLogin'))
-        elif not checkCreator(restaurant):
-            flash(CREATOR_ERROR)
-            return redirect(url_for('showMenu', restaurant_id=restaurant_id))
-        else:
-            return render_template('editMenuItem.html',
+        return render_template('editMenuItem.html',
                                    restaurant_id=restaurant_id,
                                    menu_id=menu_id,
                                    restaurant=restaurant,
@@ -632,35 +608,23 @@ def editMenuItem(restaurant_id, menu_id):
 
 
 @app.route('/restaurant/<int:restaurant_id>/menu/<int:menu_id>/delete/', methods=['GET', 'POST'])  # noqa
-def deleteMenuItem(restaurant_id, menu_id):
+@login_required
+@owner_required
+def deleteMenuItem(restaurant_id, menu_id, restaurant, session):
     '''
     handles deletion of an existing menu item
     '''
-    session = getSession()
-    restaurant = session.query(Restaurant) \
-                        .filter_by(restaurant_id=restaurant_id) \
-                        .one()
     itemToBeDeleted = session.query(MenuItem).filter_by(menu_id=menu_id).one()
-    # check again if user is creator of restaurant
-    if request.method == 'POST' and checkCreator(restaurant):
+    if request.method == 'POST':
         session.delete(itemToBeDeleted)
         session.commit()
         flash("Menu item deleted")
 
         session.close()
         return redirect(url_for('showMenu', restaurant_id=restaurant_id))
-    # only show form is user is logged in AND the user is the creator of the
-    # restaurant, otherwise redirect them to the login page or to the
-    # read-only view of the restaurant menu page
     else:
         session.close()
-        if not checkAuth():
-            return redirect(url_for('showLogin'))
-        elif not checkCreator(restaurant):
-            flash(CREATOR_ERROR)
-            return redirect(url_for('showMenu', restaurant_id=restaurant_id))
-        else:
-            return render_template('deleteMenuItem.html',
+        return render_template('deleteMenuItem.html',
                                    restaurant_id=restaurant_id,
                                    menu_id=menu_id,
                                    restaurant=restaurant,
