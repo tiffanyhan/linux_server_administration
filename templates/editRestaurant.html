@@ -7,7 +7,7 @@
 			<label>Name:</label>
 			<br>
 			<div class="error">{{ error }}</div>
-			<input class="text-input" type="text" size="30" name="name" placeholder="{{ restaurant.name }}">
+			<input class="text-input" type="text" size="30" name="name" value="{{ restaurant.name }}">
 			<br>
 			<br>
 			<input class="submit-input" type="submit" value="Rename"> | <a href="{{ url_for('showMenu', restaurant_id = restaurant_id) }}">Cancel</a>
