@@ -492,50 +492,36 @@ def deleteRestaurant(restaurant_id, restaurant, session):
 @app.route('/restaurant/<int:restaurant_id>/public/')
 @app.route('/restaurant/<int:restaurant_id>/public/menu/')
 @prepare_menu
-def showPublicMenu(restaurant_id, restaurant, appetizers, entrees,
-                   desserts, beverages, items):
-    creator = getUserInfo(restaurant.user_id)
-    return render_template('publicmenu.html',
-                           restaurant_id=restaurant_id,
-                           restaurant=restaurant,
-                           appetizers=appetizers,
-                           entrees=entrees,
-                           desserts=desserts,
-                           beverages=beverages,
-                           creator=creator)
+def showPublicMenu(**kwargs):
+    kwargs['creator'] = getUserInfo(kwargs['restaurant'].user_id)
+    return render_template('publicmenu.html', **kwargs)
 
 
 @app.route('/restaurant/<int:restaurant_id>/')
 @app.route('/restaurant/<int:restaurant_id>/menu/')
 @owner_required
 @prepare_menu
-def showMenu(restaurant_id, restaurant, appetizers, entrees,
-             desserts, beverages, session, items):
+def showMenu(**kwargs):
     '''
     shows the menu for a given restaurant
     '''
     # the creator view tells the user if there are no items at all
     # in the menu, or if there are no items in each course type
-    if items == []:
+    if kwargs['items'] == []:
         flash('You currently have no items in this menu')
 
-    if appetizers == []:
+    if kwargs['appetizers'] == []:
         flash('You currently have no appetizers in this menu')
-    if entrees == []:
+    if kwargs['entrees'] == []:
         flash('You currently have no entrees in this menu')
-    if desserts == []:
+    if kwargs['desserts'] == []:
         flash('You currently have no desserts in this menu')
-    if beverages == []:
+    if kwargs['beverages'] == []:
         flash('You currently have no beverages in this menu')
 
-    session.close()
-    return render_template('menu.html',
-                           restaurant_id=restaurant_id,
-                           restaurant=restaurant,
-                           appetizers=appetizers,
-                           entrees=entrees,
-                           desserts=desserts,
-                           beverages=beverages)
+    kwargs['session'].close()
+    del kwargs['session']
+    return render_template('menu.html', **kwargs)
 
 
 @app.route('/restaurant/<int:restaurant_id>/menu/new/', methods=['GET', 'POST'])  # noqa
