@@ -24,8 +24,10 @@ CREATOR_ERROR = '''You must be the creator of this restaurant menu
                   in order to make changes.'''
 
 
-# returns a database session
 def getSession():
+    '''
+    returns a database session
+    '''
     engine = create_engine('sqlite:///restaurantmenuwithusers.db')
     Base.metadata.bind = engine
     DBSession = sessionmaker(bind=engine)
@@ -33,8 +35,10 @@ def getSession():
     return session
 
 
-# check is user is logged in: returns true or false
 def checkAuth():
+    '''
+    check is user is logged in: returns true or false
+    '''
     auth = ''
     if 'username' in login_session:
         auth = True
@@ -43,8 +47,10 @@ def checkAuth():
     return auth
 
 
-# check if user created this restaurant: returns true or false
 def checkCreator(restaurant):
+    '''
+    check if user created this restaurant: returns true or false
+    '''
     creator = ''
     if login_session['user_id'] == restaurant.user_id:
         creator = True
@@ -54,8 +60,11 @@ def checkCreator(restaurant):
 
 
 # USER HELPER FUNCTIONS
-# returns user's user_id from the db, accepts user's email as argument
 def getUserID(email):
+    '''
+    returns user's user_id from the db,
+    accepts user's email as argument
+    '''
     session = getSession()
     try:
         user = session.query(User).filter_by(email=email).one()
@@ -64,16 +73,21 @@ def getUserID(email):
         return None
 
 
-# takes user's user_id from the db, returns the user object
 def getUserInfo(user_id):
+    '''
+    takes user's user_id from the db, returns the user object
+    '''
     session = getSession()
     user = session.query(User).filter_by(user_id=user_id).one()
     return user
 
 
-# takes flask's built-in session object, creates a new user in db,
-# and returns the user's user_id from the db
 def createUser(login_session):
+    '''
+    takes flask's built-in session object,
+    creates a new user in db, and returns
+    the user's user_id from the db
+    '''
     newUser = User(name=login_session['username'],
                    email=login_session['email'],
                    picture=login_session['picture'])
@@ -84,10 +98,13 @@ def createUser(login_session):
     return user.user_id
 
 
-# an extra helper function I added: it makes sure the picture stored in the db
-# is up-to-date with what the oauth provider has.  takes in a login session
-# and returns the user's user_id from the db.
 def updatePicture(login_session):
+    '''
+    an extra helper function I added: it makes sure
+    the picture stored in the db is up-to-date with
+    what the oauth provider has.  takes in a login
+    session and returns the user's user_id from the db.
+    '''
     session = getSession()
     user = session.query(User).filter_by(email=login_session['email']).one()
     user.picture = login_session['picture']
@@ -96,9 +113,11 @@ def updatePicture(login_session):
     return user.user_id
 
 
-# handler for our login page, makes and passes in a state token
 @app.route('/login/')
 def showLogin():
+    '''
+    handler for our login page, makes and passes in a state token
+    '''
     state = ''.join(random.choice(string.ascii_uppercase + string.digits)
                     for x in xrange(32))
     login_session['state'] = state
@@ -107,6 +126,9 @@ def showLogin():
 
 @app.route('/gconnect', methods=['POST'])
 def gconnect():
+    '''
+    this function handles sign-in via google+
+    '''
     # validate state token
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter.'), 401)
@@ -184,6 +206,9 @@ def gconnect():
 
 @app.route('/gdisconnect/')
 def gdisconnect():
+    '''
+    this function handles sign-out from google+
+    '''
     # Only disconnect a connected user.
     credentials = login_session.get('credentials')
     if credentials is None:
@@ -206,6 +231,9 @@ def gdisconnect():
 
 @app.route('/fbconnect', methods=['POST', 'GET'])
 def fbconnect():
+    '''
+    this function handles sign-in via facebook
+    '''
     if request.args.get('state') != login_session['state']:
         response = make_response(json.dumps('Invalid state parameter.'), 401)
         response.headers['Content-Type'] = 'application/json'
@@ -253,6 +281,9 @@ def fbconnect():
 
 @app.route('/fbdisconnect/')
 def fbdisconnect():
+    '''
+    this function handles sign-out from facebook
+    '''
     facebook_id = login_session['facebook_id']
     access_token = login_session.get('access_token')
     url = 'https://graph.facebook.com/%s/premissions?access_token=%s' % (facebook_id, access_token)  # noqa
@@ -263,9 +294,11 @@ def fbdisconnect():
 
 @app.route('/disconnect/')
 def disconnect():
-    # if the user is logged in, check to see whether they
-    # logged in with fb or google, and call gdisconnect()
-    # or fbdisconnect() accordingly
+    '''
+    if the user is logged in, this function checks to see
+    whether they logged in with fb or google, and calls
+    gdisconnect() or fbdisconnect() accordingly
+    '''
     if 'provider' in login_session:
         if login_session['provider'] == 'google':
             gdisconnect()
@@ -291,6 +324,9 @@ def disconnect():
 @app.route('/')
 @app.route('/restaurants/')
 def showRestaurants():
+    '''
+    shows all the restaurants we have stored in the db
+    '''
     session = getSession()
     restaurants = session.query(Restaurant).all()
     # show all restaurants, unless there are none.
@@ -303,9 +339,12 @@ def showRestaurants():
 
 @app.route('/restaurant/new/', methods=['GET', 'POST'])
 def newRestaurant():
+    '''
+    handles creation of a new restaurant
+    '''
     if request.method == 'POST':
         newName = request.form['name']
-        # create a new restsaurant as long as user entered in a name
+        # create a new restaurant as long as user entered in a name
         if not newName:
             error = 'Please enter in a new restaurant name'
             return render_template('newRestaurant.html', error=error)
@@ -332,6 +371,9 @@ def newRestaurant():
 
 @app.route('/restaurant/<int:restaurant_id>/edit/', methods=['GET', 'POST'])
 def editRestaurant(restaurant_id):
+    '''
+    handles editing of an existing restaurant
+    '''
     session = getSession()
     restaurantToEdit = session.query(Restaurant).filter_by(restaurant_id=restaurant_id).one()  # noqa
     # check again if user is creator of restaurant
@@ -373,6 +415,9 @@ def editRestaurant(restaurant_id):
 
 @app.route('/restaurant/<int:restaurant_id>/delete/', methods=['GET', 'POST'])
 def deleteRestaurant(restaurant_id):
+    '''
+    handles deletion of an existing restaurant
+    '''
     session = getSession()
     restaurantToDelete = session.query(Restaurant) \
                                 .filter_by(restaurant_id=restaurant_id) \
@@ -404,6 +449,9 @@ def deleteRestaurant(restaurant_id):
 @app.route('/restaurant/<int:restaurant_id>/')
 @app.route('/restaurant/<int:restaurant_id>/menu/')
 def showMenu(restaurant_id):
+    '''
+    shows the menu for a given restaurant
+    '''
     # get all the menu items belonging to this restaurant
     session = getSession()
     restaurant = session.query(Restaurant) \
@@ -469,6 +517,9 @@ def showMenu(restaurant_id):
 
 @app.route('/restaurant/<int:restaurant_id>/menu/new/', methods=['GET', 'POST'])  # noqa
 def newMenuItem(restaurant_id):
+    '''
+    handles creation of a new menu item
+    '''
     session = getSession()
     restaurant = session.query(Restaurant) \
                         .filter_by(restaurant_id=restaurant_id) \
@@ -527,6 +578,9 @@ def newMenuItem(restaurant_id):
 
 @app.route('/restaurant/<int:restaurant_id>/menu/<int:menu_id>/edit/', methods=['GET', 'POST'])  # noqa
 def editMenuItem(restaurant_id, menu_id):
+    '''
+    handles editing of an existing menu item
+    '''
     session = getSession()
     restaurant = session.query(Restaurant) \
                         .filter_by(restaurant_id=restaurant_id) \
@@ -579,6 +633,9 @@ def editMenuItem(restaurant_id, menu_id):
 
 @app.route('/restaurant/<int:restaurant_id>/menu/<int:menu_id>/delete/', methods=['GET', 'POST'])  # noqa
 def deleteMenuItem(restaurant_id, menu_id):
+    '''
+    handles deletion of an existing menu item
+    '''
     session = getSession()
     restaurant = session.query(Restaurant) \
                         .filter_by(restaurant_id=restaurant_id) \
@@ -610,9 +667,11 @@ def deleteMenuItem(restaurant_id, menu_id):
                                    item=itemToBeDeleted)
 
 
-# returns a JSON endpoint for all restaurants
 @app.route('/restaurants/JSON/')
 def restaurantJSON():
+    '''
+    returns a JSON endpoint for all restaurants
+    '''
     session = getSession()
     restaurants = session.query(Restaurant).all()
 
@@ -620,9 +679,11 @@ def restaurantJSON():
     return jsonify(Restaurants=[restaurant.serialize for restaurant in restaurants])  # noqa
 
 
-# returns a JSON endpoint for a restaurant's menu page
 @app.route('/restaurant/<int:restaurant_id>/menu/JSON/')
 def restaurantMenuJSON(restaurant_id):
+    '''
+    returns a JSON endpoint for a restaurant's menu page
+    '''
     session = getSession()
     restaurant = session.query(Restaurant) \
                         .filter_by(restaurant_id=restaurant_id) \
@@ -635,9 +696,11 @@ def restaurantMenuJSON(restaurant_id):
     return jsonify(MenuItems=[item.serialize for item in items])
 
 
-# returns a JSON endpoint for one individual menu item
 @app.route('/restaurant/<int:restaurant_id>/menu/<int:menu_id>/JSON/')
 def restaurantMenuItemJSON(restaurant_id, menu_id):
+    '''
+    returns a JSON endpoint for one individual menu item
+    '''
     session = getSession()
     item = session.query(MenuItem).filter_by(menu_id=menu_id).one()
 
