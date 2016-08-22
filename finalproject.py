@@ -22,8 +22,9 @@ app = Flask(__name__)
 CLIENT_ID = json.loads(
     open('client_secrets.json', 'r').read())['web']['client_id']
 
-CREATOR_ERROR = '''You must be the creator of this restaurant menu
-                  in order to make changes.'''
+CREATOR_ERROR = '''This is the public view of the menu. If you are the
+                creator of this menu and would like to make changes,
+                please sign in to access the admin view. '''
 
 
 def getSession():
@@ -54,7 +55,7 @@ def checkCreator(restaurant):
     check if user created this restaurant: returns true or false
     '''
     creator = ''
-    if login_session['user_id'] == restaurant.user_id:
+    if login_session.get('user_id') == restaurant.user_id:
         creator = True
     else:
         creator = False
@@ -115,6 +116,7 @@ def updatePicture(login_session):
     return user.user_id
 
 
+# DECORATOR FUNCTIONS
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -130,14 +132,55 @@ def owner_required(f):
     def decorated_function(*args, **kwargs):
         restaurant_id = kwargs.get('restaurant_id')
         session = getSession()
-        restaurant = session.query(Restaurant).filter_by(restaurant_id=restaurant_id).one()
+        restaurant = session.query(Restaurant) \
+                            .filter_by(restaurant_id=restaurant_id) \
+                            .one()
         kwargs['restaurant'] = restaurant
         kwargs['session'] = session
         if checkCreator(restaurant):
             return f(*args, **kwargs)
         else:
             flash(CREATOR_ERROR)
-            return redirect(url_for('showMenu', restaurant_id=restaurant_id))
+            session.close()
+            return redirect(url_for('showPublicMenu', restaurant_id=restaurant_id))
+    return decorated_function
+
+
+def prepare_menu(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        restaurant_id = kwargs.get('restaurant_id')
+        session = getSession()
+        # get all the menu items belonging to this restaurant
+        session = getSession()
+        restaurant = session.query(Restaurant) \
+                            .filter_by(restaurant_id=restaurant_id)\
+                            .one()
+        items = session.query(MenuItem) \
+                       .filter_by(restaurant_id=restaurant_id) \
+                       .all()
+        # create a list for each type of course, and append
+        # each menu item accordingly.  this is preparation for
+        # displaying menu items by course type.
+        kwargs['restaurant'] = restaurant
+        kwargs['items'] = items
+        kwargs['appetizers'] = []
+        kwargs['entrees'] = []
+        kwargs['desserts'] = []
+        kwargs['beverages'] = []
+
+        for item in items:
+            if item.course == 'Appetizer':
+                kwargs['appetizers'].append(item)
+            elif item.course == 'Entree':
+                kwargs['entrees'].append(item)
+            elif item.course == 'Dessert':
+                kwargs['desserts'].append(item)
+            elif item.course == 'Beverage':
+                kwargs['beverages'].append(item)
+
+        return f(*args, **kwargs)
+
     return decorated_function
 
 
@@ -446,74 +489,53 @@ def deleteRestaurant(restaurant_id, restaurant, session):
                                    restaurant_id=restaurant_id,
                                    restaurant=restaurant)
 
+@app.route('/restaurant/<int:restaurant_id>/public/')
+@app.route('/restaurant/<int:restaurant_id>/public/menu/')
+@prepare_menu
+def showPublicMenu(restaurant_id, restaurant, appetizers, entrees,
+                   desserts, beverages, items):
+    creator = getUserInfo(restaurant.user_id)
+    return render_template('publicmenu.html',
+                           restaurant_id=restaurant_id,
+                           restaurant=restaurant,
+                           appetizers=appetizers,
+                           entrees=entrees,
+                           desserts=desserts,
+                           beverages=beverages,
+                           creator=creator)
+
 
 @app.route('/restaurant/<int:restaurant_id>/')
 @app.route('/restaurant/<int:restaurant_id>/menu/')
-def showMenu(restaurant_id):
+@owner_required
+@prepare_menu
+def showMenu(restaurant_id, restaurant, appetizers, entrees,
+             desserts, beverages, session, items):
     '''
     shows the menu for a given restaurant
     '''
-    # get all the menu items belonging to this restaurant
-    session = getSession()
-    restaurant = session.query(Restaurant) \
-                        .filter_by(restaurant_id=restaurant_id)\
-                        .one()
-    items = session.query(MenuItem) \
-                   .filter_by(restaurant_id=restaurant_id) \
-                   .all()
-    # create a list for each type of course, and append
-    # each menu item accordingly.  this is preparation for
-    # displaying menu items by course type.
-    appetizers = []
-    entrees = []
-    desserts = []
-    beverages = []
+    # the creator view tells the user if there are no items at all
+    # in the menu, or if there are no items in each course type
+    if items == []:
+        flash('You currently have no items in this menu')
 
-    for item in items:
-        if item.course == 'Appetizer':
-            appetizers.append(item)
-        elif item.course == 'Entree':
-            entrees.append(item)
-        elif item.course == 'Dessert':
-            desserts.append(item)
-        elif item.course == 'Beverage':
-            beverages.append(item)
-    # is user is logged in AND the creator of the restaurant, show the
-    # creator view of the restaurant.  otherwise show the public view.
-    if not checkAuth() or not checkCreator(restaurant):
-        creator = getUserInfo(restaurant.user_id)
-        session.close()
-        return render_template('publicmenu.html',
-                               restaurant_id=restaurant_id,
-                               restaurant=restaurant,
-                               appetizers=appetizers,
-                               entrees=entrees,
-                               desserts=desserts,
-                               beverages=beverages,
-                               creator=creator)
-    else:
-        # the creator view tells the user if there are no items at all
-        # in the menu, or if there are no items in each course type
-        if items == []:
-            flash('You currently have no items in this menu')
+    if appetizers == []:
+        flash('You currently have no appetizers in this menu')
+    if entrees == []:
+        flash('You currently have no entrees in this menu')
+    if desserts == []:
+        flash('You currently have no desserts in this menu')
+    if beverages == []:
+        flash('You currently have no beverages in this menu')
 
-        if appetizers == []:
-            flash('You currently have no appetizers in this menu')
-        if entrees == []:
-            flash('You currently have no entrees in this menu')
-        if desserts == []:
-            flash('You currently have no desserts in this menu')
-        if beverages == []:
-            flash('You currently have no beverages in this menu')
-
-        session.close()
-        return render_template('menu.html',
-                               restaurant_id=restaurant_id,
-                               restaurant=restaurant,
-                               appetizers=appetizers,
-                               entrees=entrees,
-                               desserts=desserts,
-                               beverages=beverages)
+    session.close()
+    return render_template('menu.html',
+                           restaurant_id=restaurant_id,
+                           restaurant=restaurant,
+                           appetizers=appetizers,
+                           entrees=entrees,
+                           desserts=desserts,
+                           beverages=beverages)
 
 
 @app.route('/restaurant/<int:restaurant_id>/menu/new/', methods=['GET', 'POST'])  # noqa
