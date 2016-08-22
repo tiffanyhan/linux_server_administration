@@ -142,7 +142,7 @@ def owner_required(f):
         else:
             flash(CREATOR_ERROR)
             session.close()
-            return redirect(url_for('showPublicMenu', restaurant_id=restaurant_id))
+            return redirect(url_for('showPublicMenu', restaurant_id=restaurant_id))  # noqa
     return decorated_function
 
 
@@ -465,8 +465,8 @@ def editRestaurant(restaurant_id, restaurant, session):
     else:
         session.close()
         return render_template('editRestaurant.html',
-                                   restaurant_id=restaurant_id,
-                                   restaurant=restaurant)
+                               restaurant_id=restaurant_id,
+                               restaurant=restaurant)
 
 
 @app.route('/restaurant/<int:restaurant_id>/delete/', methods=['GET', 'POST'])
@@ -486,8 +486,9 @@ def deleteRestaurant(restaurant_id, restaurant, session):
     else:
         session.close()
         return render_template('deleteRestaurant.html',
-                                   restaurant_id=restaurant_id,
-                                   restaurant=restaurant)
+                               restaurant_id=restaurant_id,
+                               restaurant=restaurant)
+
 
 @app.route('/restaurant/<int:restaurant_id>/public/')
 @app.route('/restaurant/<int:restaurant_id>/public/menu/')
@@ -569,8 +570,8 @@ def newMenuItem(restaurant_id, restaurant, session):
     else:
         session.close()
         return render_template('newMenuItem.html',
-                                   restaurant_id=restaurant_id,
-                                   restaurant=restaurant)
+                               restaurant_id=restaurant_id,
+                               restaurant=restaurant)
 
 
 @app.route('/restaurant/<int:restaurant_id>/menu/<int:menu_id>/edit/', methods=['GET', 'POST'])  # noqa
@@ -609,10 +610,10 @@ def editMenuItem(restaurant_id, menu_id, restaurant, session):
     else:
         session.close()
         return render_template('editMenuItem.html',
-                                   restaurant_id=restaurant_id,
-                                   menu_id=menu_id,
-                                   restaurant=restaurant,
-                                   item=itemToBeEdited)
+                               restaurant_id=restaurant_id,
+                               menu_id=menu_id,
+                               restaurant=restaurant,
+                               item=itemToBeEdited)
 
 
 @app.route('/restaurant/<int:restaurant_id>/menu/<int:menu_id>/delete/', methods=['GET', 'POST'])  # noqa
@@ -633,10 +634,10 @@ def deleteMenuItem(restaurant_id, menu_id, restaurant, session):
     else:
         session.close()
         return render_template('deleteMenuItem.html',
-                                   restaurant_id=restaurant_id,
-                                   menu_id=menu_id,
-                                   restaurant=restaurant,
-                                   item=itemToBeDeleted)
+                               restaurant_id=restaurant_id,
+                               menu_id=menu_id,
+                               restaurant=restaurant,
+                               item=itemToBeDeleted)
 
 
 @app.route('/restaurants/JSON/')
