@@ -547,6 +547,7 @@ def newMenuItem(restaurant_id, restaurant, session):
             # etc.  passing in values with **params.
             error = '''All form fields are required in order to create
                     a new menu item'''
+            session.close()
             return render_template('newMenuItem.html',
                                    restaurant_id=restaurant_id,
                                    restaurant=restaurant,

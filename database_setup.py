@@ -15,6 +15,8 @@ class User(Base):
 	name = Column(String(80), nullable = False)
 	email = Column(String(80), nullable = False)
 	picture = Column(String(250))
+	restaurant = relationship('Restaurant', cascade='all, delete-orphan')
+	menu_item = relationship('MenuItem', cascade='all, delete-orphan')
 
 
 class Restaurant(Base):
@@ -25,7 +27,7 @@ class Restaurant(Base):
 	restaurant_id = Column(Integer,
 						   primary_key = True)
 	user_id = Column(Integer, ForeignKey('user.user_id'))
-	user = relationship(User)
+	menu_item = relationship('MenuItem', cascade='all, delete-orphan')
 	# add a method to help return a JSON endpoint
 	# of the restaurant object's properties
 	@property
@@ -34,6 +36,7 @@ class Restaurant(Base):
 			'name': self.name,
 			'restaurant_id': self.restaurant_id
 		}
+
 
 class MenuItem(Base):
 	__tablename__ = 'menu_item'
@@ -47,9 +50,7 @@ class MenuItem(Base):
 	price = Column(String(8))
 	restaurant_id = Column(Integer,
 						   ForeignKey('restaurant.restaurant_id'))
-	restaurant = relationship(Restaurant)
 	user_id = Column(Integer, ForeignKey('user.user_id'))
-	user = relationship(User)
 	# add a method to help return a JSON endpoint
 	# of the menu item object's properties
 	@property
@@ -61,6 +62,7 @@ class MenuItem(Base):
 			'price': self.price,
 			'course': self.course
 		}
+
 
 # Ending configuration files
 engine = create_engine('sqlite:///restaurantmenuwithusers.db')
