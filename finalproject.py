@@ -31,7 +31,7 @@ def getSession():
     '''
     returns a database session
     '''
-    engine = create_engine('sqlite:///restaurantmenuwithusers.db')
+    engine = create_engine('postgresql://catalog:catalog@localhost/catalog')
     Base.metadata.bind = engine
     DBSession = sessionmaker(bind=engine)
     session = DBSession()
