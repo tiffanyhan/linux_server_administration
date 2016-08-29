@@ -35,6 +35,7 @@ class Restaurant(Base):
 			'restaurant_id': self.restaurant_id
 		}
 
+
 class MenuItem(Base):
 	__tablename__ = 'menu_item'
 
@@ -61,6 +62,7 @@ class MenuItem(Base):
 			'price': self.price,
 			'course': self.course
 		}
+
 
 # Ending configuration files
 engine = create_engine('sqlite:///restaurantmenuwithusers.db')
