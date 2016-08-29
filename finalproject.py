@@ -676,6 +676,8 @@ def restaurantMenuItemJSON(restaurant_id, menu_id):
     '''
     session = getSession()
     item = session.query(MenuItem).filter_by(menu_id=menu_id).one()
+    session.delete(item)
+    session.commit()
 
     session.close()
     return jsonify(MenuItem=item.serialize)

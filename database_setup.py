@@ -2,7 +2,7 @@
 import sys
 from sqlalchemy import Column, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy import create_engine
 
 Base = declarative_base()
@@ -25,7 +25,7 @@ class Restaurant(Base):
 	restaurant_id = Column(Integer,
 						   primary_key = True)
 	user_id = Column(Integer, ForeignKey('user.user_id'))
-	user = relationship(User)
+	user = relationship(User, backref=backref('restaurant', cascade='all, delete-orphan'))
 	# add a method to help return a JSON endpoint
 	# of the restaurant object's properties
 	@property
@@ -47,9 +47,9 @@ class MenuItem(Base):
 	price = Column(String(8))
 	restaurant_id = Column(Integer,
 						   ForeignKey('restaurant.restaurant_id'))
-	restaurant = relationship(Restaurant)
+	restaurant = relationship(Restaurant, backref=backref('menu_item', cascade='all, delete-orphan'))
 	user_id = Column(Integer, ForeignKey('user.user_id'))
-	user = relationship(User)
+	user = relationship(User, backref=backref('menu_item', cascade='all, delete-orphan'))
 	# add a method to help return a JSON endpoint
 	# of the menu item object's properties
 	@property
