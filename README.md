@@ -1,5 +1,4 @@
-Information for Review of
-'Linux Server Configuration' Project
+Information for Project Reviewer
 =====================================
 
 IP address: 52.43.165.7
